@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wish List</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/script.js"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 transition-colors duration-300">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3.5">
+                <img src="pics/logo.png" alt="Made by Luca" class="w-14 h-14 object-contain">
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 dark:from-white dark:via-slate-200 dark:to-indigo-200 bg-clip-text text-transparent">Luca's Wish List</h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-8 space-y-8">
+
+        <!-- Inviting Welcoming Banner -->
+        <div id="publicBanner" class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 md:p-8 text-white shadow-xl shadow-indigo-500/20">
+            <!-- Background Decorative Circles -->
+            <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+            <div class="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-black/10 blur-2xl pointer-events-none"></div>
+            
+            <div class="relative z-10 max-w-2xl space-y-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold tracking-wide uppercase">
+                    <i class="fa-solid fa-heart text-pink-300"></i> Welcome Friends & Family
+                </div>
+                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Hey there! 👋</h2>
+                <p class="text-sm md:text-base text-indigo-100 leading-relaxed">
+                    I've put together This entire software experience a few gift ideas I'd love. If you choose one, please claim it below so everyone knows it's taken.
+                </p>
+            </div>
+        </div>
+
+        <!-- Wishlist Items Grid -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-sparkles text-amber-500"></i> Available Wishlist Ideas
+                </h3>
+            </div>
+            <div id="wishlistGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Items injected by JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800/80 py-3 text-xs text-slate-500 dark:text-slate-500 transition-colors duration-300">
+        <div class="max-w-5xl mx-auto px-4 flex items-center justify-end gap-3">
+            <p>&copy; Luca 2026</p>
+            <div id="themeToggle" role="group" aria-label="Color theme" class="inline-flex items-center gap-0.5 rounded-lg border p-0.5">
+                <button type="button" data-theme-choice="system" aria-pressed="false" class="rounded-md border border-transparent px-2 py-1 text-[11px] transition-colors">System</button>
+                <button type="button" data-theme-choice="light" aria-pressed="false" class="rounded-md border border-transparent px-2 py-1 text-[11px] transition-colors">Light</button>
+                <button type="button" data-theme-choice="dark" aria-pressed="false" class="rounded-md border border-transparent px-2 py-1 text-[11px] transition-colors">Dark</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Claim Modal (Visitor) -->
+    <div id="claimModal" class="fixed inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center overflow-y-auto p-4 hidden">
+        <div class="claim-modal-content bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-slate-800 dark:text-slate-100 transition-colors">
+            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-gift"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-slate-100" id="claimModalTitle">Mark as Purchased</h3>
+                </div>
+                <button type="button" data-close-claim-modal class="h-11 w-11 shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Awesome! Adding your name helps prevent duplicate gifts. All Details are hidden from the public view.</p>
+            
+            <form id="claimForm" class="space-y-4">
+                <input type="hidden" id="claimItemId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Name / Nickname</label>
+                    <input type="text" id="buyerName" required placeholder="e.g. Alex" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date Purchased</label>
+                    <input type="date" id="purchaseDate" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors">
+                </div>
+                <div class="flex flex-col-reverse sm:flex-row gap-2 pt-2">
+                    <button type="button" data-close-claim-modal class="min-h-11 flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+                    <button type="submit" class="min-h-11 flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-500/25">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 dark:bg-slate-800 text-slate-100 border border-slate-800 dark:border-slate-700 px-4 py-3 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2.5 text-sm pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Action completed successfully</span>
+    </div>
+
+    <!-- Hidden iframe for silent Google Sheets form posts -->
+    <iframe name="hidden_gsheet_iframe" id="hidden_gsheet_iframe" class="hidden-gsheet-iframe"></iframe>
+
+
+</body>
+</html>
