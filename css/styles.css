@@ -1,0 +1,99 @@
+.hidden-gsheet-iframe {
+    display: none;
+}
+
+#themeToggle button {
+    min-height: 32px;
+}
+
+.claim-modal-content {
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+}
+html:not(.dark) header {
+    background-color: rgb(255 255 255 / 0.94);
+    border-color: #cbd5e1;
+}
+html:not(.dark) .card-hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.1);
+}
+html:not(.dark) .card-hover:hover {
+    box-shadow: 0 18px 30px rgb(15 23 42 / 0.14);
+}
+html:not(.dark) .wishlist-item-link {
+    background-color: #eef2ff;
+    border-color: #a5b4fc;
+    color: #3730a3;
+}
+html:not(.dark) .wishlist-item-link:hover {
+    background-color: #e0e7ff;
+}
+html:not(.dark) .wishlist-claim-button {
+    background-color: #4338ca;
+}
+html:not(.dark) .wishlist-claim-button:hover {
+    background-color: #3730a3;
+}
+.item-image-placeholder {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    color: #cbd5e1;
+}
+html:not(.dark) .item-image-placeholder {
+    background: linear-gradient(135deg, #e2e8f0, #f8fafc);
+    color: #64748b;
+}
+.wishlist-price-badge {
+    background-color: rgb(15 23 42 / 0.9);
+    color: #6ee7b7;
+    border-color: rgb(16 185 129 / 0.55);
+}
+html:not(.dark) .wishlist-price-badge {
+    background-color: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+#themeToggle {
+    background-color: #fff;
+    border-color: #cbd5e1;
+}
+#themeToggle [data-theme-choice][aria-pressed] {
+    color: #475569;
+    background-color: transparent;
+}
+#themeToggle [data-theme-choice][aria-pressed]:hover:not([aria-pressed="true"]) {
+    background-color: #f1f5f9;
+}
+#themeToggle [data-theme-choice][aria-pressed="true"] {
+    background-color: #e0e7ff;
+    border-color: #a5b4fc;
+    color: #3730a3;
+}
+html.dark #themeToggle {
+    background-color: #0f172a;
+    border-color: #334155;
+}
+html.dark #themeToggle [data-theme-choice][aria-pressed] {
+    color: #cbd5e1;
+}
+html.dark #themeToggle [data-theme-choice][aria-pressed]:hover:not([aria-pressed="true"]) {
+    background-color: #1e293b;
+}
+html.dark #themeToggle [data-theme-choice][aria-pressed="true"] {
+    background-color: #312e81;
+    border-color: #6366f1;
+    color: #e0e7ff;
+}
