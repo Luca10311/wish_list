@@ -273,7 +273,7 @@ function renderGrid() {
             <div class="space-y-3">
                 <h4 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100">All current gifts on list are purchased! 🎉</h4>
                 <p class="text-base md:text-lg font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto">
-                    Thank you so much to everyone who purchased me a gift! You can wait for new items to show up Or a spool of PETG works well :)
+                    Thank you so much to everyone who purchased me a gift! You can wait for new items to show up or a spool of PETG works well :)
                 </p>
             </div>
             <a href="https://us.store.bambulab.com/products/petg-basic?id=738167451007287302" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-colors hover:bg-indigo-500">
