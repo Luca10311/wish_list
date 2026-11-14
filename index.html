@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Wish List</title>
+    <title>Luca's Wish List</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="js/script.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-300">
 
@@ -44,7 +45,7 @@
                 </div>
                 <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Hey there! 👋</h2>
                 <p class="text-sm md:text-base text-indigo-100 leading-relaxed">
-                    I've put together this entire software experience and a few gift ideas I'd love. If you choose one, please claim it below so everyone knows it's taken.
+                    I've put together this wishlist and website. If you'd like to get me something, please claim it below so everyone knows it's taken!
                 </p>
             </div>
         </div>
@@ -89,21 +90,43 @@
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Awesome! Adding your name helps prevent duplicate gifts. All Details are hidden from the public view.</p>
             
+            <!-- Linked Item Warning & Direct Link (shown when item has a URL and NOT bulk order) -->
+            <div id="linkedItemNotice" class="hidden rounded-2xl border-2 border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/80 dark:bg-indigo-950/50 p-3.5 text-indigo-950 dark:text-indigo-100 space-y-3 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-200/80 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-circle-exclamation text-sm"></i>
+                    </div>
+                    <div class="space-y-1 text-xs leading-relaxed">
+                        <p class="font-bold text-indigo-950 dark:text-indigo-200">Open the link before confirming</p>
+                        <p>Confirming removes this item and its link from the site. Please make sure you have opened it first.</p>
+                    </div>
+                </div>
+                <a id="modalItemLink" href="#" target="_blank" rel="noopener noreferrer" class="wishlist-item-link w-full py-2.5 px-3 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> Open Store Link
+                </a>
+            </div>
+
+            <!-- Bulk Order Notice (shown when bulkOrder is true) -->
+            <div id="bulkOrderNotice" class="hidden rounded-2xl border-2 border-amber-300 dark:border-amber-700/80 bg-amber-50 dark:bg-amber-950/50 p-3.5 text-amber-900 dark:text-amber-100 flex items-start gap-3 shadow-sm">
+                <div class="w-8 h-8 rounded-xl bg-amber-200/80 dark:bg-amber-900/80 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                    <i class="fa-solid fa-boxes-stacked text-sm"></i>
+                </div>
+                <div class="space-y-1 text-xs leading-relaxed">
+                    <p class="font-bold text-amber-950 dark:text-amber-200" id="bulkOrderNoticeHeader">Included in a Bulk Order</p>
+                    <p id="bulkOrderText">Reserving this item adds it to our shared bulk order. Please give <strong>$13.99</strong> to Michael or Rebecca.</p>
+                </div>
+            </div>
+
             <form id="claimForm" class="space-y-4">
                 <input type="hidden" id="claimItemId">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Name / Nickname</label>
                     <input type="text" id="buyerName" required placeholder="e.g. Alex" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors">
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date Purchased</label>
-                    <input type="date" id="purchaseDate" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors">
-                </div>
                 <div class="flex flex-col-reverse sm:flex-row gap-2 pt-2">
                     <button type="button" data-close-claim-modal class="min-h-11 flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button>
-                    <button type="submit" class="min-h-11 flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-500/25">Confirm</button>
+                    <button type="submit" id="claimSubmitBtn" class="min-h-11 flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-500/25">Confirm</button>
                 </div>
             </form>
         </div>
@@ -118,6 +141,6 @@
     <!-- Hidden iframe for silent Google Sheets form posts -->
     <iframe name="hidden_gsheet_iframe" id="hidden_gsheet_iframe" class="hidden-gsheet-iframe"></iframe>
 
-
+    <script src="js/script.js" defer></script>
 </body>
 </html>

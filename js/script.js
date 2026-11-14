@@ -18,55 +18,29 @@ tailwind.config = {
             }
         }
     }
-}
+};
 
 const INITIAL_ITEMS = [
     {
         id: "1",
         title: "Bambu Lab X1-Carbon 3D Printer",
-        url: "https://bambulab.com",
-        imageUrl: "https://images.unsplash.com/photo-1615655406736-b37c4fabf923?auto=format&fit=crop&w=600&q=80",
+        url: "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302",
+        imageUrl: "https://store.bblcdn.com/s7/default/07333e2d8fdc4ffeb69193e6e0d68244/Black.png__op__resize,m_lfit,w_1920__op__format,f_auto__op__quality,q_80",
         price: "1449.00",
+        bulkOrder: false,
+        store: "Bambu Lab",
         purchased: false,
         buyerName: null,
         purchaseDate: null
     },
     {
         id: "2",
-        title: "Ergonomic Desk Chair",
-        url: "",
-        imageUrl: "https://images.unsplash.com/photo-1580481072645-022f9a6d1270?auto=format&fit=crop&w=600&q=80",
-        price: "249.99",
-        purchased: false,
-        buyerName: null,
-        purchaseDate: null
-    },
-    {
-        id: "3",
-        title: "Bambu Dual-Sided Textured PEI Plate",
-        url: "https://store.bambulab.com",
-        imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80",
-        price: "34.99",
-        purchased: false,
-        buyerName: null,
-        purchaseDate: null
-    },
-    {
-        id: "4",
-        title: "SUNLU Filament Dryer S2",
-        url: "https://www.amazon.com",
-        imageUrl: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80",
-        price: "49.99",
-        purchased: false,
-        buyerName: null,
-        purchaseDate: null
-    },
-    {
-        id: "5",
-        title: "Hardened Steel Nozzle Set (0.4mm & 0.6mm)",
-        url: "https://store.bambulab.com",
-        imageUrl: "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=600&q=80",
-        price: "29.99",
+        title: "PETG Spool",
+        url: "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302",
+        imageUrl: "https://store.bblcdn.com/s7/default/07333e2d8fdc4ffeb69193e6e0d68244/Black.png__op__resize,m_lfit,w_1920__op__format,f_auto__op__quality,q_80",
+        price: "13.99",
+        bulkOrder: true,
+        store: "Bambu Lab",
         purchased: false,
         buyerName: null,
         purchaseDate: null
@@ -74,12 +48,12 @@ const INITIAL_ITEMS = [
 ];
 
 const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycby4fH0fVnDzw3nSPBMBH21mk_fas_7HibtV6veVFu51yBLa_PyDu_1BdAkpoyNLG3MA/exec";
-
 const HOME_ASSISTANT_WEBHOOK_URL = 'https://castellano.one/api/webhook/-3PLQnRyxsj1xPHJKX7XL1RmD';
 const HOME_ASSISTANT_NOTIFICATION_STATE_KEY = 'home_assistant_empty_notified_public';
 
 let items = [];
 let itemsLoaded = false;
+let lastSaveTimestamp = 0;
 let sheetWebAppUrl = localStorage.getItem('sheet_webapp_url') || DEFAULT_SHEET_URL;
 
 function updateThemeToggle() {
@@ -111,6 +85,30 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+function extractStoreName(url) {
+    try {
+        if (!url) return 'Store';
+        const parsed = new URL(url);
+        let hostname = parsed.hostname.replace(/^www\./, '');
+        if (hostname.includes('amazon')) return 'Amazon';
+        if (hostname.includes('bambulab')) return 'Bambu Lab';
+
+        const parts = hostname.split('.');
+        const domain = parts.length >= 2 ? parts[parts.length - 2] : hostname;
+        return domain.charAt(0).toUpperCase() + domain.slice(1);
+    } catch (e) {
+        return 'Store';
+    }
+}
+
+function getFormattedDate() {
+    const d = new Date();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${month}/${day}/${year}`;
 }
 
 function notifyHomeAssistantIfEmpty() {
@@ -159,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('claimForm').addEventListener('submit', handleClaimSubmit);
     loadItems();
-    document.getElementById('purchaseDate').valueAsDate = new Date();
 
     window.addEventListener('storage', (e) => {
         if (e.key === 'wishlist_items') {
@@ -179,25 +176,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadItems() {
+    if (Date.now() - lastSaveTimestamp < 8000) return;
+
+    const fetchStartTime = Date.now();
     if (sheetWebAppUrl) {
         try {
             const url = sheetWebAppUrl + (sheetWebAppUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
             const res = await fetch(url, { redirect: "follow" });
+
+            if (lastSaveTimestamp > fetchStartTime) return;
+
             if (res.ok) {
                 const fetchedData = await res.json();
                 if (Array.isArray(fetchedData)) {
                     itemsLoaded = true;
-                    // Column Mapping: ID=row[0], Title=row[1], URL=row[2], ImageURL=row[3], Price=row[4], Purchased=row[5], BuyerName=row[6], PurchaseDate=row[7]
-                    const newItems = fetchedData.map((item, idx) => ({
-                        id: String(idx + 1),
-                        title: item.title || "Untitled Item",
-                        url: item.url || "",
-                        imageUrl: item.imageUrl || "",
-                        price: item.price ? String(item.price) : "",
-                        purchased: (item.purchased === true || String(item.purchased).toLowerCase() === 'true' || item.purchased === 1),
-                        buyerName: item.buyerName || null,
-                        purchaseDate: item.purchaseDate || null
-                    }));
+                    const newItems = fetchedData.map((item, idx) => {
+                        const itemUrl = item.url || "";
+                        const storeName = item.store && item.store.trim() !== "" ? item.store : extractStoreName(itemUrl);
+                        return {
+                            id: String(idx + 1),
+                            title: item.title || "Untitled Item",
+                            url: itemUrl,
+                            imageUrl: item.imageUrl || "",
+                            price: item.price ? String(item.price) : "",
+                            bulkOrder: (item.bulkOrder === true || String(item.bulkOrder).toLowerCase() === 'true' || item.bulkOrder === 1),
+                            store: storeName,
+                            purchased: (item.purchased === true || String(item.purchased).toLowerCase() === 'true' || item.purchased === 1),
+                            buyerName: item.buyerName || null,
+                            purchaseDate: item.purchaseDate || null
+                        };
+                    });
 
                     if (JSON.stringify(newItems) !== JSON.stringify(items)) {
                         items = newItems;
@@ -215,15 +223,21 @@ async function loadItems() {
     const saved = localStorage.getItem('wishlist_items');
     itemsLoaded = true;
     const fallbackItems = saved ? JSON.parse(saved) : [...INITIAL_ITEMS];
-    const newItems = fallbackItems.map((item, idx) => ({ ...item, id: String(idx + 1) }));
+    const newItems = fallbackItems.map((item, idx) => {
+        const storeName = item.store && item.store.trim() !== "" ? item.store : extractStoreName(item.url);
+        return { ...item, id: String(idx + 1), store: storeName };
+    });
     if (JSON.stringify(newItems) !== JSON.stringify(items)) {
         items = newItems;
+        saveItems();
+    } else {
         renderGrid();
     }
     notifyHomeAssistantIfEmpty();
 }
 
 function saveItems() {
+    lastSaveTimestamp = Date.now();
     itemsLoaded = true;
     items = items.map((item, idx) => ({ ...item, id: String(idx + 1) }));
     localStorage.setItem('wishlist_items', JSON.stringify(items));
@@ -234,7 +248,7 @@ function saveItems() {
         try {
             let form = document.getElementById('hidden_gsheet_form');
             if (form) form.remove();
-            
+
             form = document.createElement('form');
             form.id = 'hidden_gsheet_form';
             form.method = 'POST';
@@ -273,19 +287,22 @@ function renderGrid() {
             <div class="space-y-3">
                 <h4 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100">All current gifts on list are purchased! 🎉</h4>
                 <p class="text-base md:text-lg font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto">
-                    Thank you so much to everyone who purchased me a gift! You can wait for new items to show up or a spool of PETG works well :)
+                    Thank you so much to everyone who purchased a gift for me! You can wait for new items to show up, or add a spool of PETG $13.99 to a shared bulk order below.
                 </p>
             </div>
-            <a href="https://us.store.bambulab.com/products/petg-basic?id=738167451007287302" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-colors hover:bg-indigo-500">
-                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                Visit Bambu Lab Store
-            </a>
+            <div class="flex justify-center">
+                <button type="button" onclick="openBulkOrderFallbackModal()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-colors">
+                    <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+                    Contribute to Bulk Order
+                </button>
+            </div>
         `;
         grid.appendChild(card);
         return;
     }
 
     itemsToDisplay.forEach(item => {
+        const hasLink = Boolean(item.url && item.url.trim() !== '');
         const card = document.createElement('div');
         card.className = "group bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl overflow-hidden flex flex-col shadow-md hover:shadow-2xl shadow-slate-200/50 dark:shadow-none card-hover transition-all duration-300";
 
@@ -306,7 +323,7 @@ function renderGrid() {
             ` : ''}
         `;
 
-        if (item.url && item.url.trim() !== '') {
+        if (hasLink && !item.bulkOrder) {
             imgHtml = `
                 <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="block w-full h-full" title="View product link">
                     ${imgHtml}
@@ -331,13 +348,18 @@ function renderGrid() {
         titleElem.textContent = item.title;
         contentSection.appendChild(titleElem);
 
-        if (item.url && item.url.trim() !== '') {
+        if (item.bulkOrder) {
+            const bulkBadge = document.createElement('div');
+            bulkBadge.className = 'wishlist-bulk-badge w-full py-2 px-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold text-xs flex items-center justify-center gap-2';
+            bulkBadge.innerHTML = '<i class="fa-solid fa-boxes-stacked text-xs"></i> Part of a Bulk Order';
+            contentSection.appendChild(bulkBadge);
+        } else if (hasLink) {
             const linkBtn = document.createElement('a');
             linkBtn.href = item.url;
             linkBtn.target = '_blank';
             linkBtn.rel = 'noopener noreferrer';
             linkBtn.className = 'wishlist-item-link w-full py-2 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold text-xs flex items-center justify-center gap-2 transition-colors';
-            linkBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> View Item Online`;
+            linkBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> View Item Online';
             contentSection.appendChild(linkBtn);
         }
 
@@ -345,9 +367,9 @@ function renderGrid() {
         actionsSection.className = "pt-3 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800/80";
 
         const claimBtn = document.createElement('button');
-        claimBtn.onclick = () => openClaimModal(item.id, item.title);
+        claimBtn.onclick = () => openClaimModal(item.id, item.title, item.url, item.price, item.bulkOrder, item.store);
         claimBtn.className = "wishlist-claim-button w-full py-3 px-4 rounded-xl font-semibold text-xs bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.98]";
-        claimBtn.innerHTML = `<i class="fa-solid fa-gift text-sm"></i> I'll Get This Gift!`;
+        claimBtn.innerHTML = '<i class="fa-solid fa-gift text-sm"></i> I\'ll Get This Gift!';
         actionsSection.appendChild(claimBtn);
 
         body.appendChild(contentSection);
@@ -369,10 +391,56 @@ function showImagePlaceholder(image) {
     image.replaceWith(placeholder);
 }
 
-function openClaimModal(id, title) {
+function openClaimModal(id, title, url, price, bulkOrder, store) {
     document.getElementById('claimItemId').value = id;
-    document.getElementById('claimModalTitle').textContent = `Purchasing: ${title}`;
+
+    const cachedName = localStorage.getItem('wishlist_visitor_name');
+    if (cachedName) {
+        document.getElementById('buyerName').value = cachedName;
+    }
+
+    const linkedNotice = document.getElementById('linkedItemNotice');
+    const bulkNotice = document.getElementById('bulkOrderNotice');
+    const modalLink = document.getElementById('modalItemLink');
+    const storeName = store && store.trim() !== '' ? store : 'Store';
+
+    if (bulkOrder) {
+        linkedNotice.classList.add('hidden');
+        bulkNotice.classList.remove('hidden');
+
+        document.getElementById('claimModalTitle').textContent = `${storeName}'s Bulk Order`;
+        document.getElementById('bulkOrderNoticeHeader').textContent = `${storeName}'s Bulk Order`;
+        document.getElementById('claimSubmitBtn').textContent = 'Reserve for Bulk Order';
+
+        const formattedPrice = price ? (String(price).startsWith('$') ? price : `$${price}`) : '$13.99';
+        document.getElementById('bulkOrderText').innerHTML = `Reserving this item adds it to our shared bulk order. Please give <strong>${formattedPrice}</strong> to Michael or Rebecca.`;
+    } else {
+        bulkNotice.classList.add('hidden');
+        linkedNotice.classList.remove('hidden');
+
+        const hasLink = Boolean(url && url.trim() !== '');
+        if (hasLink) {
+            modalLink.href = url;
+            modalLink.classList.remove('hidden');
+        } else {
+            modalLink.href = '#';
+            modalLink.classList.add('hidden');
+        }
+
+        document.getElementById('claimModalTitle').textContent = 'Mark as Purchased';
+        document.getElementById('claimSubmitBtn').textContent = 'Confirm Purchase';
+    }
+
     document.getElementById('claimModal').classList.remove('hidden');
+}
+
+function openBulkOrderFallbackModal() {
+    let bulkItem = items.find(i => i.bulkOrder && !i.purchased);
+    if (bulkItem) {
+        openClaimModal(bulkItem.id, bulkItem.title, bulkItem.url, bulkItem.price, bulkItem.bulkOrder, bulkItem.store);
+    } else {
+        openClaimModal("fallback_petg_spool", "PETG Spool", "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302", "13.99", true, "Bambu Lab");
+    }
 }
 
 function closeClaimModal() {
@@ -383,17 +451,43 @@ function handleClaimSubmit(event) {
     event.preventDefault();
     const itemId = document.getElementById('claimItemId').value;
     const buyerName = document.getElementById('buyerName').value.trim();
-    const purchaseDate = document.getElementById('purchaseDate').value;
+    const formattedDate = getFormattedDate();
 
-    const target = items.find(i => i.id === itemId);
+    if (buyerName) {
+        localStorage.setItem('wishlist_visitor_name', buyerName);
+    }
+
+    let target = items.find(i => i.id === itemId);
+
+    if (!target && itemId === "fallback_petg_spool") {
+        const newId = String(items.length + 1);
+        target = {
+            id: newId,
+            title: "PETG Spool",
+            url: "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302",
+            imageUrl: "https://store.bblcdn.com/s7/default/07333e2d8fdc4ffeb69193e6e0d68244/Black.png__op__resize,m_lfit,w_1920__op__format,f_auto__op__quality,q_80",
+            price: "13.99",
+            bulkOrder: true,
+            store: "Bambu Lab",
+            purchased: false,
+            buyerName: null,
+            purchaseDate: null
+        };
+        items.push(target);
+    }
+
+    const isBulk = Boolean(target && target.bulkOrder);
+
     if (target) {
         target.purchased = true;
         target.buyerName = buyerName;
-        target.purchaseDate = purchaseDate;
+        target.purchaseDate = formattedDate;
     }
     saveItems();
     closeClaimModal();
-    showToast("Thank you! Item marked as purchased.");
+    showToast(isBulk
+        ? "Thank you! Reserved as part of the bulk order."
+        : "Thank you! Item marked as purchased.");
 }
 
 function showToast(message) {
@@ -409,3 +503,4 @@ function showToast(message) {
         toast.classList.add('translate-y-20', 'opacity-0');
     }, 3000);
 }
+
