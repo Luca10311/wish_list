@@ -349,8 +349,11 @@ function renderGrid() {
         contentSection.appendChild(titleElem);
 
         if (item.bulkOrder) {
-            const bulkBadge = document.createElement('div');
-            bulkBadge.className = 'wishlist-bulk-badge w-full py-2 px-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold text-xs flex items-center justify-center gap-2';
+            const bulkBadge = document.createElement('button');
+            bulkBadge.type = 'button';
+            bulkBadge.className = 'wishlist-bulk-badge w-full py-2 px-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors';
+            bulkBadge.setAttribute('aria-label', `Reserve ${item.title} as part of the bulk order`);
+            bulkBadge.onclick = () => openClaimModal(item.id, item.title, item.url, item.price, item.bulkOrder, item.store);
             bulkBadge.innerHTML = '<i class="fa-solid fa-boxes-stacked text-xs"></i> Part of a Bulk Order';
             contentSection.appendChild(bulkBadge);
         } else if (hasLink) {

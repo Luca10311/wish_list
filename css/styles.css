@@ -3,7 +3,13 @@
 }
 
 #themeToggle button {
-    min-height: 32px;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.wishlist-item-link,
+.wishlist-bulk-badge {
+    min-height: 44px;
 }
 
 .claim-modal-content {
