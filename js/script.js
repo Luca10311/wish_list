@@ -20,33 +20,6 @@ tailwind.config = {
     }
 };
 
-const INITIAL_ITEMS = [
-    {
-        id: "1",
-        title: "Bambu Lab X1-Carbon 3D Printer",
-        url: "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302",
-        imageUrl: "https://store.bblcdn.com/s7/default/07333e2d8fdc4ffeb69193e6e0d68244/Black.png__op__resize,m_lfit,w_1920__op__format,f_auto__op__quality,q_80",
-        price: "1449.00",
-        bulkOrder: false,
-        store: "Bambu Lab",
-        purchased: false,
-        buyerName: null,
-        purchaseDate: null
-    },
-    {
-        id: "2",
-        title: "PETG Spool",
-        url: "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302",
-        imageUrl: "https://store.bblcdn.com/s7/default/07333e2d8fdc4ffeb69193e6e0d68244/Black.png__op__resize,m_lfit,w_1920__op__format,f_auto__op__quality,q_80",
-        price: "13.99",
-        bulkOrder: true,
-        store: "Bambu Lab",
-        purchased: false,
-        buyerName: null,
-        purchaseDate: null
-    }
-];
-
 const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycby4fH0fVnDzw3nSPBMBH21mk_fas_7HibtV6veVFu51yBLa_PyDu_1BdAkpoyNLG3MA/exec";
 const HOME_ASSISTANT_WEBHOOK_URL = 'https://castellano.one/api/webhook/-3PLQnRyxsj1xPHJKX7XL1RmD';
 const HOME_ASSISTANT_NOTIFICATION_STATE_KEY = 'home_assistant_empty_notified_public';
@@ -94,6 +67,7 @@ function extractStoreName(url) {
         let hostname = parsed.hostname.replace(/^www\./, '');
         if (hostname.includes('amazon')) return 'Amazon';
         if (hostname.includes('bambulab')) return 'Bambu Lab';
+        if (hostname.includes('frame')) return 'Framework';
 
         const parts = hostname.split('.');
         const domain = parts.length >= 2 ? parts[parts.length - 2] : hostname;
@@ -101,6 +75,19 @@ function extractStoreName(url) {
     } catch (e) {
         return 'Store';
     }
+}
+
+function parseAmount(value) {
+    const normalized = String(value ?? '').replace(/[$,\s]/g, '');
+    return normalized ? Number(normalized) : NaN;
+}
+
+function formatPrice(value) {
+    const match = String(value ?? '').trim().match(/^\$?\s*(-?)([\d,]+)(\.\d+)?$/);
+    if (!match) return String(value ?? '').trim();
+
+    const integerPart = match[2].replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return `$${match[1]}${integerPart}${match[3] || ''}`;
 }
 
 function getFormattedDate() {
@@ -199,7 +186,11 @@ async function loadItems() {
                             url: itemUrl,
                             imageUrl: item.imageUrl || "",
                             price: item.price ? String(item.price) : "",
+                            amountRemaining: item.amountRemaining !== undefined && item.amountRemaining !== null && item.amountRemaining !== ""
+                                ? String(item.amountRemaining)
+                                : (item.price ? String(item.price) : "0.00"),
                             bulkOrder: (item.bulkOrder === true || String(item.bulkOrder).toLowerCase() === 'true' || item.bulkOrder === 1),
+                            isGroupGift: (item.isGroupGift === true || String(item.isGroupGift).toLowerCase() === 'true' || item.isGroupGift === 1),
                             store: storeName,
                             purchased: (item.purchased === true || String(item.purchased).toLowerCase() === 'true' || item.purchased === 1),
                             buyerName: item.buyerName || null,
@@ -222,10 +213,13 @@ async function loadItems() {
     }
     const saved = localStorage.getItem('wishlist_items');
     itemsLoaded = true;
-    const fallbackItems = saved ? JSON.parse(saved) : [...INITIAL_ITEMS];
+    const fallbackItems = saved ? JSON.parse(saved) : [];
     const newItems = fallbackItems.map((item, idx) => {
         const storeName = item.store && item.store.trim() !== "" ? item.store : extractStoreName(item.url);
-        return { ...item, id: String(idx + 1), store: storeName };
+        const amountRemaining = item.amountRemaining !== undefined && item.amountRemaining !== null && item.amountRemaining !== ""
+            ? item.amountRemaining
+            : item.price || "0.00";
+        return { ...item, id: String(idx + 1), store: storeName, amountRemaining };
     });
     if (JSON.stringify(newItems) !== JSON.stringify(items)) {
         items = newItems;
@@ -287,14 +281,8 @@ function renderGrid() {
             <div class="space-y-3">
                 <h4 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100">All current gifts on list are purchased! 🎉</h4>
                 <p class="text-base md:text-lg font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto">
-                    Thank you so much to everyone who purchased a gift for me! You can wait for new items to show up, or add a spool of PETG $13.99 to a shared bulk order below.
+                    Thank you so much to everyone who purchased a gift for me!
                 </p>
-            </div>
-            <div class="flex justify-center">
-                <button type="button" onclick="openBulkOrderFallbackModal()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-colors">
-                    <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
-                    Contribute to Bulk Order
-                </button>
             </div>
         `;
         grid.appendChild(card);
@@ -310,7 +298,8 @@ function renderGrid() {
         imgContainer.className = "relative h-52 bg-slate-100 dark:bg-slate-950 overflow-hidden";
 
         const imgSrc = item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl : '';
-        const formattedPrice = item.price ? (String(item.price).startsWith('$') ? item.price : `$${item.price}`) : '';
+        const displayPrice = item.price;
+        const formattedPrice = displayPrice ? formatPrice(displayPrice) : '';
 
         let imgHtml = `
             ${imgSrc
@@ -323,7 +312,13 @@ function renderGrid() {
             ` : ''}
         `;
 
-        if (hasLink && !item.bulkOrder) {
+        if (item.bulkOrder) {
+            imgHtml = `
+                <button type="button" class="block w-full h-full text-left" aria-label="Reserve ${escapeHtml(item.title)} as part of the bulk order">
+                    ${imgHtml}
+                </button>
+            `;
+        } else if (hasLink) {
             imgHtml = `
                 <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="block w-full h-full" title="View product link">
                     ${imgHtml}
@@ -332,6 +327,12 @@ function renderGrid() {
         }
 
         imgContainer.innerHTML = imgHtml;
+        const bulkOrderImageButton = imgContainer.querySelector('button');
+        if (bulkOrderImageButton) {
+            bulkOrderImageButton.addEventListener('click', () => {
+                openClaimModal(item.id, item.title, item.url, item.price, item.bulkOrder, item.store);
+            });
+        }
         const image = imgContainer.querySelector('img');
         if (image) {
             image.addEventListener('error', () => showImagePlaceholder(image), { once: true });
@@ -352,10 +353,66 @@ function renderGrid() {
             const bulkBadge = document.createElement('button');
             bulkBadge.type = 'button';
             bulkBadge.className = 'wishlist-bulk-badge w-full py-2 px-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors';
-            bulkBadge.setAttribute('aria-label', `Reserve ${item.title} as part of the bulk order`);
             bulkBadge.onclick = () => openClaimModal(item.id, item.title, item.url, item.price, item.bulkOrder, item.store);
             bulkBadge.innerHTML = '<i class="fa-solid fa-boxes-stacked text-xs"></i> Part of a Bulk Order';
             contentSection.appendChild(bulkBadge);
+        } else if (item.isGroupGift) {
+            const groupBadge = document.createElement(hasLink ? 'button' : 'div');
+            groupBadge.className = `wishlist-group-badge w-full py-2 px-3 rounded-xl border shadow-sm space-y-2${hasLink ? ' text-left cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-colors' : ''}`;
+            if (hasLink) {
+                groupBadge.type = 'button';
+                groupBadge.setAttribute('aria-label', `Contribute to ${item.title}`);
+                groupBadge.onclick = () => window.open(item.url, '_blank', 'noopener,noreferrer');
+            }
+            const remVal = item.amountRemaining !== undefined && item.amountRemaining !== null && item.amountRemaining !== ""
+                ? item.amountRemaining
+                : item.price;
+            const groupBadgeHeader = document.createElement('div');
+            groupBadgeHeader.className = 'flex items-center justify-between gap-2 text-xs font-semibold';
+
+            const groupBadgeTitle = document.createElement('span');
+            groupBadgeTitle.className = 'flex items-center gap-1.5';
+            groupBadgeTitle.innerHTML = '<i class="fa-solid fa-users text-purple-500"></i> Group Gift';
+
+            const remainingLabel = document.createElement('span');
+            remainingLabel.className = 'font-bold';
+            remainingLabel.textContent = `Remaining: ${formatPrice(remVal)}`;
+
+            groupBadgeHeader.appendChild(groupBadgeTitle);
+            groupBadgeHeader.appendChild(remainingLabel);
+            groupBadge.appendChild(groupBadgeHeader);
+
+            const totalAmount = parseAmount(item.price);
+            const remainingAmount = parseAmount(remVal);
+            if (Number.isFinite(totalAmount) && totalAmount > 0 && Number.isFinite(remainingAmount)) {
+                const fundedPercentage = Math.min(100, Math.max(0, ((totalAmount - remainingAmount) / totalAmount) * 100));
+                const roundedPercentage = Math.round(fundedPercentage);
+                const progressContainer = document.createElement('div');
+                progressContainer.className = 'wishlist-group-progress space-y-1.5';
+
+                const progressLabel = document.createElement('div');
+                progressLabel.className = 'flex justify-between text-xs font-medium text-slate-600 dark:text-slate-300';
+                progressLabel.innerHTML = `<span>Funding progress</span><span>${roundedPercentage}% funded</span>`;
+
+                const progressBar = document.createElement('div');
+                progressBar.className = 'wishlist-group-progress-track';
+                progressBar.setAttribute('role', 'progressbar');
+                progressBar.setAttribute('aria-label', 'Group gift funding progress');
+                progressBar.setAttribute('aria-valuemin', '0');
+                progressBar.setAttribute('aria-valuemax', '100');
+                progressBar.setAttribute('aria-valuenow', String(roundedPercentage));
+                progressBar.setAttribute('aria-valuetext', `${roundedPercentage}% funded`);
+
+                const progressFill = document.createElement('div');
+                progressFill.className = 'wishlist-group-progress-fill';
+                progressFill.style.width = `${fundedPercentage}%`;
+                progressBar.appendChild(progressFill);
+
+                progressContainer.appendChild(progressLabel);
+                progressContainer.appendChild(progressBar);
+                groupBadge.appendChild(progressContainer);
+            }
+            contentSection.appendChild(groupBadge);
         } else if (hasLink) {
             const linkBtn = document.createElement('a');
             linkBtn.href = item.url;
@@ -370,9 +427,15 @@ function renderGrid() {
         actionsSection.className = "pt-3 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800/80";
 
         const claimBtn = document.createElement('button');
-        claimBtn.onclick = () => openClaimModal(item.id, item.title, item.url, item.price, item.bulkOrder, item.store);
-        claimBtn.className = "wishlist-claim-button w-full py-3 px-4 rounded-xl font-semibold text-xs bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.98]";
-        claimBtn.innerHTML = '<i class="fa-solid fa-gift text-sm"></i> I\'ll Get This Gift!';
+        if (item.isGroupGift && hasLink) {
+            claimBtn.onclick = () => window.open(item.url, '_blank', 'noopener,noreferrer');
+            claimBtn.className = "wishlist-claim-button w-full py-3 px-4 rounded-xl font-semibold text-xs bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.98]";
+            claimBtn.innerHTML = '<i class="fa-solid fa-gift text-sm"></i> I will contribute to this gift';
+        } else {
+            claimBtn.onclick = () => openClaimModal(item.id, item.title, item.url, item.price, item.bulkOrder, item.store);
+            claimBtn.className = "wishlist-claim-button w-full py-3 px-4 rounded-xl font-semibold text-xs bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.98]";
+            claimBtn.innerHTML = '<i class="fa-solid fa-gift text-sm"></i> I\'ll Get This Gift!';
+        }
         actionsSection.appendChild(claimBtn);
 
         body.appendChild(contentSection);
@@ -415,7 +478,7 @@ function openClaimModal(id, title, url, price, bulkOrder, store) {
         document.getElementById('bulkOrderNoticeHeader').textContent = `${storeName}'s Bulk Order`;
         document.getElementById('claimSubmitBtn').textContent = 'Reserve for Bulk Order';
 
-        const formattedPrice = price ? (String(price).startsWith('$') ? price : `$${price}`) : '$13.99';
+        const formattedPrice = price ? formatPrice(price) : '';
         document.getElementById('bulkOrderText').innerHTML = `Reserving this item adds it to our shared bulk order. Please give <strong>${formattedPrice}</strong> to Michael or Rebecca.`;
     } else {
         bulkNotice.classList.add('hidden');
@@ -437,15 +500,6 @@ function openClaimModal(id, title, url, price, bulkOrder, store) {
     document.getElementById('claimModal').classList.remove('hidden');
 }
 
-function openBulkOrderFallbackModal() {
-    let bulkItem = items.find(i => i.bulkOrder && !i.purchased);
-    if (bulkItem) {
-        openClaimModal(bulkItem.id, bulkItem.title, bulkItem.url, bulkItem.price, bulkItem.bulkOrder, bulkItem.store);
-    } else {
-        openClaimModal("fallback_petg_spool", "PETG Spool", "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302", "13.99", true, "Bambu Lab");
-    }
-}
-
 function closeClaimModal() {
     document.getElementById('claimModal').classList.add('hidden');
 }
@@ -461,24 +515,6 @@ function handleClaimSubmit(event) {
     }
 
     let target = items.find(i => i.id === itemId);
-
-    if (!target && itemId === "fallback_petg_spool") {
-        const newId = String(items.length + 1);
-        target = {
-            id: newId,
-            title: "PETG Spool",
-            url: "https://us.store.bambulab.com/products/petg-basic?id=738167451007287302",
-            imageUrl: "https://store.bblcdn.com/s7/default/07333e2d8fdc4ffeb69193e6e0d68244/Black.png__op__resize,m_lfit,w_1920__op__format,f_auto__op__quality,q_80",
-            price: "13.99",
-            bulkOrder: true,
-            store: "Bambu Lab",
-            purchased: false,
-            buyerName: null,
-            purchaseDate: null
-        };
-        items.push(target);
-    }
-
     const isBulk = Boolean(target && target.bulkOrder);
 
     if (target) {
@@ -506,4 +542,3 @@ function showToast(message) {
         toast.classList.add('translate-y-20', 'opacity-0');
     }, 3000);
 }
-
